@@ -58,9 +58,13 @@ import Security
 /// (the same posture as the iOS device key, WhenUnlockedThisDeviceOnly). The legacy store keeps the
 /// login keychain's own default, as it always did.
 package final class KeychainIdentityStore: IdentityStore {
-    static let keyTag = Data("me.saffer.sill.remote.host-key".utf8)
-    static let label = "Sill Remote Access"
-    static let service = "me.saffer.sill.remote"
+    // A rebranded app (HostBrand, Packaging/Brand.env) keeps an identity and trust list of its own
+    // under its bundle ID, so it never reads or overwrites stock Sill.app's (and never meets the
+    // other app's keychain access prompt); devices pair with each app separately. Stock Sill and
+    // the bare binaries keep stock Sill's names. Storage only: nothing on the wire changes.
+    static let keyTag = Data((HostBrand.rebrandedBundleID.map { "\($0).remote.host-key" } ?? "me.saffer.sill.remote.host-key").utf8)
+    static let label = "\(HostBrand.name) Remote Access"
+    static let service = HostBrand.rebrandedBundleID.map { "\($0).remote" } ?? "me.saffer.sill.remote"
     static let recognitionAccount = "recognition-key"
     static let pairedAccount = "paired-devices"
     static let requirePairingAccount = "require-pairing"

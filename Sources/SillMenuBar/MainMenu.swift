@@ -1,4 +1,5 @@
 import AppKit
+import SillHostCore
 
 /// The main menu of an app that never shows one. An accessory app (LSUIElement) has no menu bar,
 /// but AppKit still routes key equivalents through the main menu, so without this ⌘C, ⌘A, ⌘F,
@@ -8,12 +9,12 @@ enum MainMenu {
     static func make() -> NSMenu {
         let main = NSMenu()
 
-        let sill = submenu(in: main, title: "Sill")
-        sill.addItem(withTitle: "About Sill", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        let sill = submenu(in: main, title: "\(HostBrand.name)")
+        sill.addItem(withTitle: "About \(HostBrand.name)", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         sill.addItem(.separator())
         sill.addItem(withTitle: "Settings…", action: #selector(AppDelegate.showSettings(_:)), keyEquivalent: ",")
         sill.addItem(.separator())
-        sill.addItem(withTitle: "Quit Sill", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        sill.addItem(withTitle: "Quit \(HostBrand.name)", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
         let edit = submenu(in: main, title: "Edit")
         edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")

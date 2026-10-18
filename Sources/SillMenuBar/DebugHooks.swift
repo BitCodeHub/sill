@@ -102,7 +102,7 @@ enum DebugHooks {
         }
         let library = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first
             ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library")
-        return library.appendingPathComponent("Logs/Sill/Sill.log")
+        return library.appendingPathComponent("Logs/\(HostBrand.name)/\(HostBrand.name).log")
     }
 
     /// The timed hooks, which Sill.app itself ignores.

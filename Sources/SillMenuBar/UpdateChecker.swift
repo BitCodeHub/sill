@@ -1,5 +1,7 @@
 import Foundation
+import SillHostCore
 import Observation
+import SillHostCore
 import StreamProtocol
 
 /// Sill.app's update check (docs/update-notice-plan.md §6): asks GitHub's releases feed whether a
@@ -108,12 +110,15 @@ final class UpdateChecker {
 
     /// Whether this build can check at all: it has a version, and it is not in test pattern mode
     /// without a test feed.
-    var canCheck: Bool { running != nil && !testPatternOnly }
+    /// The rebrand (HostBrand.updateCheckEnabled false, Packaging/Brand.env) never checks: no request
+    /// to GitHub or any other server; only a test feed on this Mac (-SillUpdateFeed) still works.
+    var canCheck: Bool { (HostBrand.updateCheckEnabled || configuration.testFeed) && running != nil && !testPatternOnly }
     private var testPatternOnly: Bool { configuration.testPattern && !configuration.testFeed }
 
     /// The stored release, when it is newer than what runs.
     var offer: UpdatePolicy.Offer? {
-        UpdatePolicy.offer(stored: stored, running: running, anyReleaseURL: configuration.testFeed)
+        guard HostBrand.updateCheckEnabled || configuration.testFeed else { return nil }
+        return UpdatePolicy.offer(stored: stored, running: running, anyReleaseURL: configuration.testFeed)
     }
 
     /// Settings › General's line and buttons.
@@ -136,6 +141,10 @@ final class UpdateChecker {
     func start() {
         guard !started else { return }
         started = true
+        if !HostBrand.updateCheckEnabled && !configuration.testFeed {
+            print("Update check: off in this build (Packaging/Brand.env); \(HostBrand.name) never asks GitHub or any other server.")
+            return
+        }
         if let offer { print("Update: Sill \(offer.version) is available (found by an earlier check).") }
         if configuration.checkAtStart {
             if testPatternOnly {
@@ -195,6 +204,7 @@ final class UpdateChecker {
     }
 
     private func run() {
+        guard HostBrand.updateCheckEnabled || configuration.testFeed else { return }   // belt and braces: canCheck
         inFlight = true
         phase = .checking
         timer?.invalidate()

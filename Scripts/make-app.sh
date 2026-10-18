@@ -22,6 +22,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# The rebrand's one place (REBRAND.md): the app's name, bundle ID, the phone apps it names, the
+# update check and the signing identity. The executable is the name without spaces.
+# shellcheck source=../Packaging/Brand.env
+. Packaging/Brand.env
+: "${BRAND_NAME:?Packaging/Brand.env sets no BRAND_NAME}" "${BRAND_BUNDLE_ID:?Packaging/Brand.env sets no BRAND_BUNDLE_ID}"
+brand_exec="${BRAND_NAME// /}"
+
 install=0; open_app=0; release=0
 for arg in "$@"; do
     case "$arg" in
@@ -56,12 +63,12 @@ if [ "$release" = 1 ]; then
     fi
 fi
 
-bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Packaging/Info.plist)"
+bundle_id="$BRAND_BUNDLE_ID"
 
 swift build -c release --product SillMenuBar
 bin="$(swift build -c release --product SillMenuBar --show-bin-path)"
-app=.build/Sill.app
-stage=.build/Sill.app.partial      # assembled aside, so a failed run never leaves half a bundle
+app=".build/$BRAND_NAME.app"
+stage=".build/$BRAND_NAME.app.partial"      # assembled aside, so a failed run never leaves half a bundle
 rm -rf "$stage"
 mkdir -p "$stage/Contents/MacOS" "$stage/Contents/Resources"
 # The executable, with the SDK it was compiled against recorded in it. SwiftPM links without
@@ -71,8 +78,19 @@ mkdir -p "$stage/Contents/MacOS" "$stage/Contents/Resources"
 # minos from the binary, sdk from the SDK in use. The signature this breaks is replaced below.
 minos="$(xcrun vtool -show-build "$bin/SillMenuBar" | awk '$1 == "minos" && !found { print $2; found = 1 }')"
 xcrun vtool -set-build-version macos "${minos:?vtool reported no deployment target for $bin/SillMenuBar}" \
-    "$(xcrun --sdk macosx --show-sdk-version)" -output "$stage/Contents/MacOS/Sill" "$bin/SillMenuBar"
+    "$(xcrun --sdk macosx --show-sdk-version)" -output "$stage/Contents/MacOS/$brand_exec" "$bin/SillMenuBar"
 cp Packaging/Info.plist "$stage/Contents/Info.plist"
+# Brand.env over the stock Info.plist: names, bundle ID and the brand's own keys (HostBrand.swift).
+# NSBonjourServices (_sill._tcp) stays stock Sill's: the wire protocol never changes.
+pb() { /usr/libexec/PlistBuddy -c "$1" "$stage/Contents/Info.plist"; }
+pb "Set :CFBundleName $BRAND_NAME"
+pb "Set :CFBundleDisplayName $BRAND_NAME"
+pb "Set :CFBundleExecutable $brand_exec"
+pb "Set :CFBundleIdentifier $BRAND_BUNDLE_ID"
+pb "Set :NSHumanReadableCopyright $BRAND_NAME is a modified version of Sill by Saffsanity (Apache-2.0)."
+pb "Set :NSLocalNetworkUsageDescription $BRAND_NAME makes this Mac visible to your iPhone and iPad on the same network so they can stream its windows."
+pb "Add :BrandPhoneApps string ${BRAND_PHONE_APPS:-Sill}"
+pb "Add :BrandUpdateCheck string ${BRAND_UPDATE_CHECK:-0}"
 build_number="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $build_number" "$stage/Contents/Info.plist"
 printf 'APPL????' > "$stage/Contents/PkgInfo"
@@ -87,6 +105,7 @@ printf 'APPL????' > "$stage/Contents/PkgInfo"
 icon_out="$PWD/.build/icon"   # absolute: actool resolves relative paths in its helper's directory, not ours
 if [ ! -f "$icon_out/compiled/Assets.car" ] || [ design/AppIcon.svg -nt "$icon_out/compiled/Assets.car" ] \
    || [ "$0" -nt "$icon_out/compiled/Assets.car" ] \
+   || { [ -f Packaging/BrandIcon.png ] && [ Packaging/BrandIcon.png -nt "$icon_out/compiled/Assets.car" ]; } \
    || { [ -d Packaging/AppIcon.icon ] && [ -n "$(find Packaging/AppIcon.icon -newer "$icon_out/compiled/Assets.car" 2>/dev/null)" ]; }; then
     rm -rf "$icon_out"; mkdir -p "$icon_out/compiled"
     if [ -d Packaging/AppIcon.icon ]; then
@@ -94,8 +113,13 @@ if [ ! -f "$icon_out/compiled/Assets.car" ] || [ design/AppIcon.svg -nt "$icon_o
     else
         doc="$icon_out/AppIcon.icon"
         mkdir -p "$doc/Assets"
-        qlmanage -t -s 1024 -o "$icon_out" "$PWD/design/AppIcon.svg" >/dev/null 2>&1 || true
-        mv "$icon_out/AppIcon.svg.png" "$doc/Assets/Sill.png" 2>/dev/null || true
+        if [ -f Packaging/BrandIcon.png ]; then
+            # The rebrand's neutral placeholder (Scripts/brand-icon.swift), never Sill's logo.
+            cp Packaging/BrandIcon.png "$doc/Assets/Sill.png"
+        else
+            qlmanage -t -s 1024 -o "$icon_out" "$PWD/design/AppIcon.svg" >/dev/null 2>&1 || true
+            mv "$icon_out/AppIcon.svg.png" "$doc/Assets/Sill.png" 2>/dev/null || true
+        fi
         cat > "$doc/icon.json" <<'JSON'
 {
   "fill" : { "solid" : "srgb:0.00000,0.00000,0.00000,1.00000" },
@@ -120,7 +144,8 @@ cp "$icon_out"/compiled/* "$stage/Contents/Resources/" 2>/dev/null || true
 # keeps the grants, because the designated requirement names the leaf certificate's common name,
 # which a renewal keeps. (`|| true`: no keychain or no match must fall through to the ad hoc
 # warning below, not end the script under `set -e`.)
-identity="${SILL_SIGN_IDENTITY:-$(security find-identity -v -p codesigning 2>/dev/null | awk '/"Apple Development: / { print $2; exit }' || true)}"
+identity="${SILL_SIGN_IDENTITY:-${BRAND_SIGN_IDENTITY:-}}"
+identity="${identity:-$(security find-identity -v -p codesigning 2>/dev/null | awk '/"Apple Development: / { print $2; exit }' || true)}"
 if [ -z "$identity" ]; then
     identity="-"
     echo "warning: no Apple Development identity in the keychain; signing ad hoc. Screen Recording and" >&2
@@ -295,7 +320,7 @@ echo "Built $app, version $(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVers
 echo "  identity keychain: ${keychain_note:-login keychain}"
 codesign -d -r- "$app" 2>&1 | sed -n 's/^# *designated => /  designated requirement: /p; s/^designated => /  designated requirement: /p'
 
-dest="${SILL_INSTALL_DIR:-/Applications}/Sill.app"
+dest="${SILL_INSTALL_DIR:-/Applications}/$BRAND_NAME.app"
 if [ "$install" = 1 ]; then
     # An iPad build of the iOS client installed on this Mac would also be a Sill.app: never replace
     # anything that is not this app.
@@ -309,9 +334,11 @@ if [ "$install" = 1 ]; then
     # Quit a running Sill.app first. SIGTERM goes through HostShutdown, which puts a staged window
     # back. The pattern matches Mac bundles only: the iOS Simulator's Sill.app is flat, and
     # `pkill -x Sill` would kill it too.
-    if pgrep -f 'Sill\.app/Contents/MacOS/Sill' >/dev/null; then
-        pkill -TERM -f 'Sill\.app/Contents/MacOS/Sill' || true
-        for _ in $(seq 1 50); do pgrep -f 'Sill\.app/Contents/MacOS/Sill' >/dev/null || break; sleep 0.1; done
+    # Only this brand's copy: stock Sill.app (another bundle, another path) is never touched.
+    own="$BRAND_NAME\.app/Contents/MacOS/$brand_exec"
+    if pgrep -f "$own" >/dev/null; then
+        pkill -TERM -f "$own" || true
+        for _ in $(seq 1 50); do pgrep -f "$own" >/dev/null || break; sleep 0.1; done
     fi
     rm -rf "$dest"
     ditto "$app" "$dest"

@@ -1,4 +1,5 @@
 import AppKit
+import SillHostCore
 
 /// The status item's image: design/AppIcon.svg reduced to a menu bar template. The iMac is an
 /// outline with its stand, the iPad sits tilted in its screen as in the icon, and the state shows
@@ -16,7 +17,7 @@ enum StatusGlyph {
     static let size = NSSize(width: 21, height: 18)
 
     static let symbolFallback: NSImage? = {
-        let image = NSImage(systemSymbolName: "macbook.and.ipad", accessibilityDescription: "Sill")
+        let image = NSImage(systemSymbolName: "macbook.and.ipad", accessibilityDescription: "\(HostBrand.name)")
         image?.isTemplate = true
         return image
     }()
@@ -28,7 +29,7 @@ enum StatusGlyph {
             return true
         }
         image.isTemplate = true
-        image.accessibilityDescription = "Sill"
+        image.accessibilityDescription = "\(HostBrand.name)"
         return image
     }
 

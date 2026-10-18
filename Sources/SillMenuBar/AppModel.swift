@@ -125,11 +125,11 @@ final class AppModel {
                 settings.onAddressNameChange = { [settings, weak remote] in remote?.setAddressName(settings.remoteAddressName) }
                 await c.start(preselect: nil, promptForPermissions: false)
                 Stats.shared.startPrinting()
-                print("Sill \(Self.version) (\(Self.build)) running from \(Bundle.main.bundlePath); log file \(HostLog.shared.fileURL?.path ?? "none")")
+                print("\(HostBrand.name) \(Self.version) (\(Self.build)) running from \(Bundle.main.bundlePath); log file \(HostLog.shared.fileURL?.path ?? "none")")
                 onboardIfNeeded()
             } catch {
                 startupError = "\(error)"
-                print("Sill couldn’t start: \(error)")
+                print("\(HostBrand.name) couldn’t start: \(error)")
             }
             // Never before the host is up, and also when it could not start: a newer Sill may be the fix.
             startUpdates()
@@ -181,7 +181,7 @@ final class AppModel {
         let choice = IdentityStorePlan.choose(bundled: Self.bundled, synthetic: synthetic,
                                               entitledAccessGroup: Self.entitledKeychainAccessGroup(), testRemoteDir: dir)
         if dir != nil, case .testDirectory = choice {} else if dir != nil {
-            print("SILL_TEST_REMOTE_DIR ignored: only a test host takes it (one that does not advertise and is not Sill.app itself).")
+            print("SILL_TEST_REMOTE_DIR ignored: only a test host takes it (one that does not advertise and is not \(HostBrand.name).app itself).")
         }
         switch choice {
         case .dataProtection(let group):
@@ -228,7 +228,7 @@ final class AppModel {
         let defaults = UserDefaults.standard
         guard defaults.object(forKey: "requirePairing") != nil else { return stored }
         if Self.bundled {
-            print("requirePairing ignored: Sill.app keeps Require pairing with its paired devices, never in its defaults or arguments; change it in Settings › Devices.")
+            print("requirePairing ignored: \(HostBrand.name).app keeps Require pairing with its paired devices, never in its defaults or arguments; change it in Settings › Devices.")
             return stored
         }
         let wanted = defaults.bool(forKey: "requirePairing")
@@ -392,10 +392,10 @@ final class AppModel {
         switch want {
         case .remote:
             napActivity = ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .latencyCritical],
-                                                                reason: "Sill is serving a device connected from away")
+                                                                reason: "\(HostBrand.name) is serving a device connected from away")
         case .connected:
             napActivity = ProcessInfo.processInfo.beginActivity(options: [.userInitiatedAllowingIdleSystemSleep, .latencyCritical],
-                                                                reason: "Sill is serving a connected device")
+                                                                reason: "\(HostBrand.name) is serving a connected device")
         case .none:
             break
         }
