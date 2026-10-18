@@ -1,0 +1,13 @@
+Overlook
+Copyright 2026 Noah Saffer (Sill)
+
+This product is a modified version of Sill (https://github.com/Saffsanity/sill)
+by Saffsanity (Noah Saffer), licensed under the Apache License, Version 2.0
+(see LICENSE). This fork (BitCodeHub/sill, branch "rebrand") changes the Mac
+app's user-visible name, bundle identifier, app icon and keychain item names,
+and turns off its update check. The wire protocol, Bonjour service type,
+TLS/pairing format and message formats are unchanged. See REBRAND.md.
+
+"Sill" is the name of the original project; this modified version is not
+affiliated with or endorsed by its author. The app icon is a neutral
+placeholder (the SF Symbol "display"), not Sill's logo.
