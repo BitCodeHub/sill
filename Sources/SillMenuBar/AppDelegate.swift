@@ -57,6 +57,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // kill must then still put the streamed window back.
         HostShutdown.install { [model] in model.coordinator }
         model.start()
+        // A request left in the defaults (LoginItemModel.requestKey), after start so its line lands
+        // in the log file; from here, a target/action-safe spot (it runs no modal loop).
+        model.loginItem.applyLaunchRequest()
         DebugHooks.schedule(model: model)
     }
 

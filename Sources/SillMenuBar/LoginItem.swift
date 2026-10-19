@@ -58,4 +58,43 @@ final class LoginItemModel {
     func openSystemSettings() {
         SMAppService.openSystemSettingsLoginItems()
     }
+
+    /// The defaults key a one-time request to turn Launch at Login on or off sits under, for setting
+    /// it without the UI (added in the rebrand, REBRAND.md):
+    /// `defaults write <bundle id> launchAtLoginRequest -bool true` while the app is not running.
+    /// At the next launch the app does what the Settings switch would (SMAppService.mainApp, so the
+    /// login item is the app's own and System Settings › Login Items shows it), logs one line, and
+    /// deletes the key: the system's status stays the truth, and switching it off there later is
+    /// never undone by this key. Any process of this user can already add a login agent, so the
+    /// key grants nothing new.
+    static let requestKey = "launchAtLoginRequest"
+
+    /// At launch, before anything reads `status`. One line in the log when a request was found.
+    func applyLaunchRequest(defaults: UserDefaults = .standard) {
+        guard defaults.object(forKey: Self.requestKey) != nil else { return }
+        let want = defaults.bool(forKey: Self.requestKey)
+        defaults.removeObject(forKey: Self.requestKey)
+        guard available else {
+            print("Launch at login request ignored: only the app bundle can be a login item.")
+            return
+        }
+        refresh()
+        if want == isOn {
+            print("Launch at login request: already \(want ? "on" : "off").")
+            return
+        }
+        if want {
+            do {
+                try SMAppService.mainApp.register()
+            } catch {
+                self.error = error.localizedDescription
+                print("Launch at login request: could not turn it on: \(error.localizedDescription)")
+            }
+            refresh()
+            print("Launch at login request: \(status == .enabled ? "on" : status == .requiresApproval ? "on, waiting for approval in System Settings › General › Login Items" : "not on (status \(status.rawValue))").")
+        } else {
+            set(false)
+            print("Launch at login request: turning it off.")
+        }
+    }
 }

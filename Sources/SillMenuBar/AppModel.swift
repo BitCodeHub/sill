@@ -58,6 +58,9 @@ final class AppModel {
     @ObservationIgnored var settingsWindowForTests: (() -> SettingsWindowController?)?
 
     @ObservationIgnored private var loggedStatus: String?
+    /// The Bonjour state last logged (logNetwork), and the check for a name that never comes.
+    @ObservationIgnored private var loggedNetwork: HostStatusSnapshot.Network?
+    @ObservationIgnored private var registeringCheck: Task<Void, Never>?
     @ObservationIgnored private var napActivity: NSObjectProtocol?
     @ObservationIgnored private var napHold = NapHold.none
     /// Recomputes the presentation when a menu item that lasts a while runs out with nothing else
@@ -367,8 +370,40 @@ final class AppModel {
             print("Status: \(line)")
         }
         let snapshot = coordinator?.status.snapshot
+        if let snapshot { logNetwork(snapshot.network) }
         holdAppNapOff(devices: snapshot?.devices.count ?? 0, remote: snapshot?.remoteDeviceCount ?? 0)
         scheduleExpiry()
+    }
+
+    /// Bonjour in the log (added in the rebrand, REBRAND.md): one line when the name devices see is
+    /// confirmed or goes away, and one if the door has been open 10 s with no name, which is what
+    /// macOS's Local Network privacy does to an app it has not been allowed for: the listener is up
+    /// (its port takes connections) and the registration silently never happens. The status line
+    /// shows none of this while a missing permission outranks it. The app only: the CLI's output
+    /// stays stock.
+    private func logNetwork(_ network: HostStatusSnapshot.Network) {
+        guard network != loggedNetwork else { return }
+        let previous = loggedNetwork
+        loggedNetwork = network
+        switch network {
+        case .advertising(let name):
+            registeringCheck?.cancel()
+            registeringCheck = nil
+            print("Bonjour: visible on the local network as “\(name)” (_sill._tcp).")
+        case .registering:
+            if case .advertising = previous { print("Bonjour: the name went away; registering again.") }
+            registeringCheck?.cancel()
+            registeringCheck = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(10))
+                guard !Task.isCancelled, let self, self.loggedNetwork == .registering else { return }
+                print("Bonjour: still not advertised 10 s after the door opened, so devices on this network can’t find this Mac. "
+                      + "macOS blocks it until \(HostBrand.name) is allowed in System Settings › Privacy & Security › Local Network "
+                      + "(it asks once, in an alert); the door itself is listening.")
+            }
+        default:
+            registeringCheck?.cancel()
+            registeringCheck = nil
+        }
     }
 
     private enum NapHold { case none, connected, remote }

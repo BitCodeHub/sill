@@ -50,9 +50,29 @@ Info.plist and keep stock Sill's names.
 - **Icon:** neutral placeholder, `Packaging/BrandIcon.png`, rendered from the SF
   Symbol "display" by `Scripts/brand-icon.swift`. Replace that PNG for a real icon.
 - **Text pointing at the phone app** says "Sill or Sage TV".
-- **Known leftovers saying "Sill":** messages the host sends *to the device*
-  (e.g. "Update Sill on your iPad…", "Allow Accessibility for Sill on the Mac") are
-  untouched host-core text, kept as stock; the update-available preview sample.
+- **Host strings.** What the host says to a person (status lines, the log, the
+  pairing and keychain errors, and the messages it sends to the device:
+  "Update Sill or Sage TV on your iPhone…", "Allow Accessibility for Overlook on
+  the Mac…") names `HostBrand.name` or `HostBrand.phoneApps`; log lines about a
+  device's app version say "app 1.0" / "an older app". The CLI and the checks see
+  no Info.plist and keep stock Sill's words. Still "Sill" on purpose: the update
+  check's strings (they describe Sill's GitHub releases, and the check is off in
+  this build), the `SillHost` command-line tool's name, TEST ONLY hooks.
+- **Attribution.** About shows "Overlook is a modified version of Sill by
+  Saffsanity (Apache-2.0)" (NSHumanReadableCopyright), and LICENSE and NOTICE
+  ship in `Contents/Resources/`.
+- **Launch at login without the UI.** With the app quit,
+  `defaults write cloud.agentlumi.overlook.mac launchAtLoginRequest -bool true`
+  (or `false`); at its next launch the app registers itself through
+  SMAppService.mainApp exactly as the Settings switch does, logs one
+  "Launch at login request: …" line and deletes the key, so System Settings ›
+  General › Login Items stays the truth.
+- **Bonjour in the log.** "Bonjour: visible on the local network as “Name”
+  (_sill._tcp)." once the name is registered, and, if it is not 10 s after the
+  door opened, a line saying macOS is blocking it until Local Network is allowed.
+  (That is what a new bundle ID meets: macOS's Local Network privacy lets the
+  listener open but silently drops the Bonjour registration until the person
+  allows it; the Info.plist keys are stock Sill's.)
 
 ## Running beside stock Sill
 
