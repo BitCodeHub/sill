@@ -109,7 +109,7 @@ final class Door {
                 let n = c.values.reduce(0, +)
                 return "Home door refused \(n) connection\(n == 1 ? "" : "s") in the last minute: \(c["unpaired", default: 0]) unpaired, "
                     + "\(c["vpn", default: 0]) through a VPN, \(c["internet", default: 0]) from the internet, "
-                    + "\(c["older", default: 0]) from an older Sill (not TLS), \(c["limit", default: 0]) over the limit."
+                    + "\(c["older", default: 0]) from an older app (not TLS), \(c["limit", default: 0]) over the limit."
             }
         }
     }()

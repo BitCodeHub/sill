@@ -5,5 +5,6 @@
 WT=$1; OUT=$2; T=$(mktemp -d)
 cp "$WT"/Sources/StreamProtocol/*.swift "$T"/
 sed '/^import StreamProtocol$/d' "${3:-$WT/Sources/SillHost/DeviceGate.swift}" > "$T/DeviceGate.swift"
+cp "$WT/Sources/SillHost/HostBrand.swift" "$T/HostBrand.swift"   # DeviceGate names the phone app through it
 cp "$(dirname "$0")/main.swift" "$T/main.swift"
 swiftc -O -package-name sill "$T"/*.swift -o "$OUT" 2>&1 | grep -E "error" ; rm -rf "$T"

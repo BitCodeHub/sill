@@ -94,6 +94,8 @@ pb "Add :BrandUpdateCheck string ${BRAND_UPDATE_CHECK:-0}"
 build_number="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $build_number" "$stage/Contents/Info.plist"
 printf 'APPL????' > "$stage/Contents/PkgInfo"
+# Apache-2.0 §4: the license and the NOTICE (Sill's attribution) travel inside the app.
+cp LICENSE NOTICE "$stage/Contents/Resources/"
 
 # The icon. design/AppIcon.svg is the iOS art, a full-bleed square. macOS 26+ masks and lights a
 # full-bleed icon itself when it comes from an asset catalog, but shows a legacy .icns shrunk

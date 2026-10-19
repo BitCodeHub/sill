@@ -302,7 +302,7 @@ package final class StreamCoordinator {
             if let identity = remote.identity {
                 home = .tls(StreamServer.HomeTLS(identity: identity, trust: remote.trust))
             } else {
-                home = .closed("Sill couldn’t use its key \(remote.keyPlace) (\(remote.identityProblem ?? "no identity"))")
+                home = .closed("\(HostBrand.name) couldn’t use its key \(remote.keyPlace) (\(remote.identityProblem ?? "no identity"))")
             }
         }
         // The test pattern is for test clients, not devices.

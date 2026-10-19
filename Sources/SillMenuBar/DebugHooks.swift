@@ -153,7 +153,7 @@ enum DebugHooks {
         let defaults = UserDefaults.standard
         if AppModel.bundled {
             for name in timedHooks + windowHooks where defaults.object(forKey: name) != nil {
-                print("-\(name) ignored: Sill.app itself takes no test hook (use the bare SillMenuBar binary).")
+                print("-\(name) ignored: \(HostBrand.name).app itself takes no test hook (use the bare SillMenuBar binary).")
             }
             return
         }
@@ -590,7 +590,7 @@ enum DebugHooks {
         list.append(Sample(name: "older-device", snapshot: home { $0.olderDeviceAt = previewNow.addingTimeInterval(-90) }))
         var closed = HostStatusSnapshot()
         closed.remote = RemoteStatus(identityProblem: keychainProblem,
-                                     homeDoor: .unavailable("Sill couldn’t use its key in the keychain (\(keychainProblem))"))
+                                     homeDoor: .unavailable("\(HostBrand.name) couldn’t use its key in the keychain (\(keychainProblem))"))
         list.append(Sample(name: "devices-cant-connect", snapshot: closed))
         return list
     }
@@ -796,7 +796,7 @@ extension DebugHooks {
             DevicesPaneSample(name: "empty", status: RemoteStatus(homeDoor: .pairingRequired)),
             DevicesPaneSample(name: "unavailable",
                               status: RemoteStatus(identityProblem: keychainProblem,
-                                                   homeDoor: .unavailable("Sill couldn’t use its key in the keychain (\(keychainProblem))"))),
+                                                   homeDoor: .unavailable("\(HostBrand.name) couldn’t use its key in the keychain (\(keychainProblem))"))),
         ]
     }
 

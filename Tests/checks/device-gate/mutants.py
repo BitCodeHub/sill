@@ -10,7 +10,7 @@ MUTANTS = [
     ("device word from the raw name", "DeviceGate.swift", "let name = SafeText.label(hello?.device ?? \"\")\n        if name.hasPrefix(\"iPhone\")", "let name = hello?.device ?? \"\"\n        if name.hasPrefix(\"iPhone\")"),
     ("no minimumVersion", "DeviceGate.swift", "minimumVersion: floor.description, reconnect: false)", "minimumVersion: nil, reconnect: false)"),
     ("reconnect left out", "DeviceGate.swift", "minimumVersion: floor.description, reconnect: false)", "minimumVersion: floor.description, reconnect: nil)"),
-    ("no hello reads as no version", "DeviceGate.swift", "what = \"an older Sill\"", "what = \"no version\""),
+    ("no hello reads as no version", "DeviceGate.swift", "what = \"an older app\"", "what = \"no version\""),
     ("hello line without the endpoint", "DeviceGate.swift", "if !name.isEmpty { line += \" (\\(endpoint))\" }", ""),
     ("slowed from the seventh", "DeviceGate.swift", "count >= loopRefusals", "count > loopRefusals"),
     ("hello line's name not cleaned", "DeviceGate.swift", "let name = SafeText.label(hello.device ?? \"\")\n        let v = SafeText.label(hello.appVersion ?? \"\", limit: 32)", "let name = hello.device ?? \"\"\n        let v = SafeText.label(hello.appVersion ?? \"\", limit: 32)"),
